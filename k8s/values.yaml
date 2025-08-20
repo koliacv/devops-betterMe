@@ -1,0 +1,8 @@
+project:
+  name: "betterme-test"
+
+container: 
+  image: "public.ecr.aws/h5v6m5z0/betterme-test/devops-test-app:latest"
+
+pods: 
+  replicas: 1

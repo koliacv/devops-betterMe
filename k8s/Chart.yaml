@@ -1,0 +1,11 @@
+apiVersion: v2
+name: betterme-devops-test
+type: application
+version: 1.0.0
+appVersion: "latest"
+
+# Maintainers information
+maintainers:
+  - name: Mykola Palahniuk
+    email: koliapalahniuk@gmail.com
+    url: https://github.com/koliacv
