@@ -46,6 +46,14 @@ resource "aws_db_parameter_group" "main" {
     value        = "on"
     apply_method = "immediate"
   }
+
+  # Allow non-SSL connections
+  parameter {
+    name         = "rds.force_ssl"
+    value        = "0"
+    apply_method = "immediate"
+  }
+
   tags = var.tags
 }
 

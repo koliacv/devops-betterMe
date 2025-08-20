@@ -122,8 +122,8 @@ module "eks" {
   aws_secret_access_key = module.security.s3_user_secret_access_key
 
   # S3 configuration for application
-  public_bucket_url   = module.s3.public_bucket_name
-  private_bucket_url  = module.s3.private_bucket_name
+  public_bucket_url   = "https://${module.s3.public_bucket_name}.s3.amazonaws.com"
+  private_bucket_url  = "https://${module.s3.private_bucket_name}.s3.amazonaws.com"
   public_bucket_name  = module.s3.public_bucket_name
   private_bucket_name = module.s3.private_bucket_name
 

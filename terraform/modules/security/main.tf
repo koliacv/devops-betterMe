@@ -121,6 +121,14 @@ resource "aws_security_group" "database" {
     security_groups = [aws_security_group.eks_cluster.id]
   }
 
+  # Add rule to allow connections from VPC CIDR (includes EKS nodes)
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"] # Allow from entire VPC
+    description = "PostgreSQL access from VPC"
+  }
   egress {
     from_port   = 0
     to_port     = 0
@@ -140,19 +148,32 @@ data "aws_caller_identity" "current" {}
 
 # Create dedicated IAM user for S3 access
 resource "aws_iam_user" "s3_application_user" {
-  name = "${var.project_name}-${var.environment}-s3-user"
-  path = "/"
+  name          = "${var.project_name}-${var.environment}-s3-user"
+  path          = "/"
+  force_destroy = true
 
   tags = merge(var.tags, {
     Name        = "${var.project_name}-${var.environment}-s3-user"
     Purpose     = "Application S3 access"
     Environment = var.environment
   })
+
+  # Prevent deletion issues by ensuring this is deleted after dependent resources
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 # Create access keys for the S3 user
 resource "aws_iam_access_key" "s3_application_user" {
   user = aws_iam_user.s3_application_user.name
+
+  # Ensure access key is deleted before user
+  depends_on = [aws_iam_user.s3_application_user]
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 # Create IAM policy for S3 access
@@ -182,10 +203,24 @@ resource "aws_iam_policy" "s3_application_policy" {
   })
 
   tags = local.common_tags
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 # Attach policy to user
 resource "aws_iam_user_policy_attachment" "s3_application_user_policy" {
   user       = aws_iam_user.s3_application_user.name
   policy_arn = aws_iam_policy.s3_application_policy.arn
+
+  # Explicit dependencies to ensure proper destruction order
+  depends_on = [
+    aws_iam_user.s3_application_user,
+    aws_iam_policy.s3_application_policy
+  ]
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }

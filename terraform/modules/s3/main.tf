@@ -1,26 +1,20 @@
 # S3 Module - Main Configuration
-# Creates public and private S3 buckets with appropriate access policies
+# Creates public and private S3 buckets for the application
 
-# Local variables for naming and tagging consistency
-locals {
-  name_prefix = "${var.project_name}-${var.environment}"
-
-  # Standard tags with module information
-  common_tags = merge(var.tags, {
-    Module = "s3"
-  })
-}
-
-# Random suffix for unique bucket names
+# Random suffix for bucket names to ensure uniqueness
 resource "random_string" "bucket_suffix" {
   length  = 8
   special = false
   upper   = false
 }
 
+# Data source for current AWS account
+data "aws_caller_identity" "current" {}
+
 # Public S3 Bucket
 resource "aws_s3_bucket" "public" {
-  bucket = "${var.project_name}-${var.environment}-public-${random_string.bucket_suffix.result}"
+  bucket        = "${var.project_name}-${var.environment}-public-${random_string.bucket_suffix.result}"
+  force_destroy = true
 
   tags = merge(var.tags, {
     Name = "${var.project_name}-${var.environment}-public-bucket"
@@ -45,7 +39,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "public" {
   }
 }
 
-# Public bucket access configuration
 resource "aws_s3_bucket_public_access_block" "public" {
   bucket = aws_s3_bucket.public.id
 
@@ -55,33 +48,40 @@ resource "aws_s3_bucket_public_access_block" "public" {
   restrict_public_buckets = false
 }
 
-resource "aws_s3_bucket_policy" "public" {
+resource "aws_s3_bucket_cors_configuration" "public" {
   bucket = aws_s3_bucket.public.id
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "PublicReadGetObject"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = ["s3:GetObject"]
-        Resource  = "${aws_s3_bucket.public.arn}/*"
-      }
-    ]
-  })
-
-  depends_on = [aws_s3_bucket_public_access_block.public]
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "PUT", "POST", "DELETE"]
+    allowed_origins = ["*"]
+    expose_headers  = []
+    max_age_seconds = 3000
+  }
 }
 
 # Private S3 Bucket
 resource "aws_s3_bucket" "private" {
-  bucket = "${var.project_name}-${var.environment}-private-${random_string.bucket_suffix.result}"
+  bucket        = "${var.project_name}-${var.environment}-private-${random_string.bucket_suffix.result}"
+  force_destroy = true
 
   tags = merge(var.tags, {
     Name = "${var.project_name}-${var.environment}-private-bucket"
     Type = "Private"
   })
+}
+
+resource "aws_s3_bucket_ownership_controls" "private" {
+  bucket = aws_s3_bucket.private.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_acl" "private" {
+  depends_on = [aws_s3_bucket_ownership_controls.private]
+  bucket     = aws_s3_bucket.private.id
+  acl        = "private"
 }
 
 resource "aws_s3_bucket_versioning" "private" {
@@ -101,63 +101,29 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "private" {
   }
 }
 
-# Private bucket access configuration (block all public access)
 resource "aws_s3_bucket_public_access_block" "private" {
   bucket = aws_s3_bucket.private.id
 
   block_public_acls       = true
-  block_public_policy     = true
   ignore_public_acls      = true
+  block_public_policy     = true
   restrict_public_buckets = true
 }
 
-# VPC Endpoint policy for private S3 access
-resource "aws_s3_bucket_policy" "private" {
-  bucket = aws_s3_bucket.private.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "VPCEndpointAccess"
-        Effect    = "Allow"
-        Principal = "*"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject",
-          "s3:ListBucket"
-        ]
-        Resource = [
-          aws_s3_bucket.private.arn,
-          "${aws_s3_bucket.private.arn}/*"
-        ]
-        Condition = {
-          StringEquals = {
-            "aws:sourceVpc" = var.vpc_id
-          }
-        }
-      }
-    ]
-  })
-
-  depends_on = [aws_s3_bucket_public_access_block.private]
-}
-
-// TODO: just for testing purposes, will remove this for production
+# Test objects
 resource "aws_s3_object" "public_test" {
   bucket       = aws_s3_bucket.public.id
   key          = "test.txt"
-  content      = "Hello from public S3 bucket! This file is accessible from anywhere."
+  content      = "This is a test file in the public bucket."
   content_type = "text/plain"
 
   tags = var.tags
 }
-// TODO: just for testing purposes, will remove this for production
+
 resource "aws_s3_object" "private_test" {
   bucket       = aws_s3_bucket.private.id
   key          = "test.txt"
-  content      = "Hello from private S3 bucket! This file is only accessible from VPC."
+  content      = "This is a test file in the private bucket."
   content_type = "text/plain"
 
   tags = var.tags

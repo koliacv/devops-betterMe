@@ -4,8 +4,5 @@ project:
 container: 
   image: "public.ecr.aws/h5v6m5z0/betterme-test/devops-test-app:latest"
 
-ingress:
-  domain: "betterme-test-mykola-palahniuk.space"
-
 pods: 
   replicas: 1

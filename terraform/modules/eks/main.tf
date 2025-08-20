@@ -167,9 +167,9 @@ resource "kubernetes_config_map" "app_config" {
 
   data = {
     aws_region         = var.aws_region
-    public_bucket_url  = var.public_bucket_url
-    private_bucket_url = var.private_bucket_url
-    database_url       = "postgresql://${var.db_username}:${var.db_password}@${var.db_host}:5432/${var.db_name}"
+    public_bucket_url  = var.public_bucket_name
+    private_bucket_url = var.private_bucket_name
+    database_url       = "postgresql://${var.db_username}:${var.db_password}@${var.db_host}:5432/${var.db_name}?sslmode=disable"
   }
 
   depends_on = [kubernetes_namespace.app_namespace]
