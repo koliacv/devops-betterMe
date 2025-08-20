@@ -39,15 +39,4 @@ variable "aws_region" {
   default     = ""
 }
 
-# S3 Bucket ARNs for IAM policy creation
-variable "public_bucket_arn" {
-  description = "ARN of the public S3 bucket"
-  type        = string
-  default     = ""
-}
-
-variable "private_bucket_arn" {
-  description = "ARN of the private S3 bucket"
-  type        = string
-  default     = ""
-}
+# S3 Bucket ARNs no longer needed - using AWS managed S3FullAccess policy

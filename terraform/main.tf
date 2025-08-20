@@ -43,10 +43,8 @@ module "security" {
   vpc_id       = module.vpc.vpc_id
   cluster_name = local.cluster_name
 
-  # S3 bucket ARNs for IAM policy
-  public_bucket_arn  = module.s3.public_bucket_arn
-  private_bucket_arn = module.s3.private_bucket_arn
-  aws_region         = var.region
+  # AWS region for configuration
+  aws_region = var.region
 
   tags = local.common_tags
 }
