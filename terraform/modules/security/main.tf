@@ -176,48 +176,17 @@ resource "aws_iam_access_key" "s3_application_user" {
   }
 }
 
-# Create IAM policy for S3 access
-resource "aws_iam_policy" "s3_application_policy" {
-  name        = "${local.name_prefix}-s3-policy"
-  description = "Policy for ${var.project_name} application S3 access"
+# Create IAM policy for S3 access - REMOVED CUSTOM POLICY
+# Using AWS managed policy instead for reliability
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject",
-          "s3:ListBucket"
-        ]
-        Resource = compact([
-          var.public_bucket_arn != "" ? var.public_bucket_arn : null,
-          var.public_bucket_arn != "" ? "${var.public_bucket_arn}/*" : null,
-          var.private_bucket_arn != "" ? var.private_bucket_arn : null,
-          var.private_bucket_arn != "" ? "${var.private_bucket_arn}/*" : null
-        ])
-      }
-    ]
-  })
-
-  tags = local.common_tags
-
-  lifecycle {
-    create_before_destroy = false
-  }
-}
-
-# Attach policy to user
+# Attach AWS managed S3FullAccess policy to user
 resource "aws_iam_user_policy_attachment" "s3_application_user_policy" {
   user       = aws_iam_user.s3_application_user.name
-  policy_arn = aws_iam_policy.s3_application_policy.arn
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 
   # Explicit dependencies to ensure proper destruction order
   depends_on = [
-    aws_iam_user.s3_application_user,
-    aws_iam_policy.s3_application_policy
+    aws_iam_user.s3_application_user
   ]
 
   lifecycle {

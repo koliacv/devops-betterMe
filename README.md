@@ -41,12 +41,22 @@ Simple deployment of a Node.js application on AWS EKS with PostgreSQL database a
 ./betterme.sh destroy
 ```
 
-## 🌐 Access Your Application
+## 🌐 Access Application
 
-After deployment, access your app via the URL:
+### **Direct Load Balancer Access:**
+```
+http://a684474d0223c4c4582b44c51eedb526-307c7cae2049f469.elb.us-west-2.amazonaws.com/
+```
+
+### **With SSL via Cloudflare:**
 ```
 https://betterme-test-mykola-palahniuk.space/
 ```
+
+### **Working Endpoints:**
+- **Database Test**: `/db` → `{"message":"Successfully connected to Postgres DB"}`
+- **Public S3 Test**: `/public-s3` → `{"message":"Successfully connected to public S3 bucket"}`
+- **Private S3 Test**: `/private-s3` → `{"message":"Successfully connected to private S3 bucket"}`
 
 ## 📊 Infrastructure Details
 
@@ -68,6 +78,17 @@ https://betterme-test-mykola-palahniuk.space/
 - **Storage**: 20GB
 - **Password**: `betterme123456` (simple for development)
 
+### **S3 Storage**
+- **Public Bucket**: `betterme-test-dev-public-gl38tae2`
+- **Private Bucket**: `betterme-test-dev-private-gl38tae2`
+- **Region**: us-west-2
+- **Encryption**: AES256
+
+### **Load Balancer**
+- **Type**: Network Load Balancer (NLB)
+- **URL**: `a684474d0223c4c4582b44c51eedb526-307c7cae2049f469.elb.us-west-2.amazonaws.com`
+- **Port**: 80 → 3000 (container port)
+- **Health Check**: HTTP on `/`
 
 ## 💰 AWS Free Tier Costs
 
